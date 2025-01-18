@@ -28,8 +28,11 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtUtil {
 
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+    public static final String REFRESH_TOKEN_HEADER = "refreshToken";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final long TOKEN_TIME = 60 * 60 * 1000L; // 1시간
+    private static final long ACCESS_TOKEN_TIME = 60 * 60 * 1000L; // 1시간
+    private static final long REFRESH_TOKEN_TIME = 24 * 60 * 60 * 1000L; // 1일
     private final HttpServletResponse httpServletResponse;
 
     @Value("${jwt.secret.key}")
@@ -43,7 +46,7 @@ public class JwtUtil {
         key = Keys.hmacShaKeyFor(bytes);
     }
 
-    public String createToken(Long userId, String username, String nickname, UserRole userRole) {
+    public String createAccessToken(Long userId, String username, String nickname, UserRole userRole) {
         Date date = new Date();
 
         return BEARER_PREFIX +
@@ -52,10 +55,20 @@ public class JwtUtil {
                         .claim("username", username)
                         .claim("nickname", nickname)
                         .claim("userRole", userRole)
-                        .setExpiration(new Date(date.getTime() + TOKEN_TIME))
+                        .setExpiration(new Date(date.getTime() + ACCESS_TOKEN_TIME))
                         .setIssuedAt(date) // 발급일
                         .signWith(key, signatureAlgorithm) // 암호화 알고리즘
                         .compact();
+    }
+
+    public String createRefreshToken(Long userId) {
+        Date now = new Date();
+        return BEARER_PREFIX + Jwts.builder()
+                .setSubject(Long.toString(userId))  // 사용자 ID 설정
+                .setIssuedAt(now)  // 발급 시간
+                .setExpiration(new Date(now.getTime() + REFRESH_TOKEN_TIME))  // 만료 시간 설정
+                .signWith(key, signatureAlgorithm)  // 서명 알고리즘과 키로 서명
+                .compact();
     }
 
     public String substringToken(String tokenValue) {
@@ -105,5 +118,47 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    // Access Token을 쿠키에 저장 (Bearer prefix 없이)
+    public void setAccessTokenCookie(String token) {
+        try {
+            token = URLEncoder.encode(token, "utf-8").replaceAll("\\+", "%20"); // Cookie Value 에는 공백이 불가능해서 encoding 진행
+
+            Cookie cookie = new Cookie(AUTHORIZATION_HEADER, token);
+            cookie.setHttpOnly(true);  // XSS 공격 방지를 위해 HttpOnly 설정. HttpOnly로 설정하여 JavaScript에서 접근 불가
+            cookie.setMaxAge(24 * 60 * 60);  // Access Token 쿠키의 만료 시간 1일로 설정 (Access Token 만료 시간과는 별개)
+            cookie.setPath("/");  // 쿠키의 경로를 루트로 설정
+            cookie.setSecure(true);
+            cookie.setDomain("localhost");
+            // Set-Cookie 헤더에 SameSite 속성 추가
+            httpServletResponse.addHeader("Set-Cookie", cookie.getName() + "=" + cookie.getValue() +
+                    "; HttpOnly; Max-Age=" + cookie.getMaxAge() + "; Path=" + cookie.getPath() +
+                    "; Secure; SameSite=Strict");
+            httpServletResponse.addCookie(cookie);
+        } catch (UnsupportedEncodingException e) {
+            log.error("Error encoding access token cookie value", e);
+        }
+    }
+
+    // Refresh Token 쿠키 설정
+    public void setRefreshTokenCookie(String refreshToken) {
+        try {
+            refreshToken = URLEncoder.encode(refreshToken, "utf-8").replaceAll("\\+", "%20"); // Cookie Value 에는 공백이 불가능해서 encoding 진행
+            Cookie cookie = new Cookie(REFRESH_TOKEN_HEADER, refreshToken);
+            cookie.setHttpOnly(true);        // XSS 공격 방지를 위해 HttpOnly 설정. HttpOnly로 설정하여 JavaScript에서 접근 불가
+            cookie.setMaxAge(1 * 24 * 60 * 60);  // Refresh Token 쿠키의 만료 시간 1일로 설정 (Refresh Token 만료 시간과는 별개)
+            cookie.setPath("/");             // 쿠키의 경로를 루트로 설정
+            cookie.setSecure(true);
+            cookie.setDomain("localhost");
+            // Set-Cookie 헤더에 SameSite 속성 추가
+            httpServletResponse.addHeader("Set-Cookie", cookie.getName() + "=" + cookie.getValue() +
+                    "; HttpOnly; Max-Age=" + cookie.getMaxAge() + "; Path=" + cookie.getPath() +
+                    "; Secure; SameSite=Strict");
+            httpServletResponse.addCookie(cookie);
+            httpServletResponse.addCookie(cookie);
+        } catch (UnsupportedEncodingException e) {
+            log.error("Error encoding refresh token cookie value", e);
+        }
     }
 }

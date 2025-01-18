@@ -14,10 +14,11 @@ import java.util.List;
 public class AuthUser {
 
     private final Long id;
-    private final String email;
+    private final String username;
+    private final String nickname;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public static AuthUser from(Long id, String email, UserRole userRole) {
-        return new AuthUser(id, email, List.of(new SimpleGrantedAuthority(userRole.name())));
+    public static AuthUser from(Long id, String username, String nickname, UserRole userRole) {
+        return new AuthUser(id, username, nickname, List.of(new SimpleGrantedAuthority(userRole.name())));
     }
 }
