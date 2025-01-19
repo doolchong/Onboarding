@@ -28,5 +28,5 @@
 ---
 
 # API 문서
-                                                 |                                                          |
+
 http://ec2-52-79-163-60.ap-northeast-2.compute.amazonaws.com:8080/swagger-ui/index.html
