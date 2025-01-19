@@ -18,9 +18,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, e.getMessage(), URI.create(request.getRequestURI())));
     }
 
+    @ExceptionHandler(ServerException.class)
+    public ResponseEntity<ExceptionResponse> handleServerException(ServerException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ExceptionResponse.from(
+                HttpStatus.NOT_FOUND, e.getMessage(), URI.create(request.getRequestURI())));
+    }
+
+    @ExceptionHandler(TokenStorageException.class)
+    public ResponseEntity<ExceptionResponse> handleTokenStorageException(TokenStorageException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExceptionResponse.from(
+                HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), URI.create(request.getRequestURI())));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ExceptionResponse> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ExceptionResponse.from(
-                HttpStatus.BAD_REQUEST, e.getMessage(), URI.create(request.getRequestURI())));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ExceptionResponse.from(
+                HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), URI.create(request.getRequestURI())));
     }
 }
