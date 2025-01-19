@@ -78,23 +78,6 @@ public class JwtUtil {
         throw new ServerException("Not Found Token");
     }
 
-    // 쿠키에 토큰 넣기
-    public void addJwtToCookie(String token) {
-        try {
-            String encodeToken = URLEncoder.encode(token, "utf-8").replaceAll("\\+", "%20"); // Cookie Value 에는 공백이 불가능해서 encoding 진행
-
-            Cookie cookie = new Cookie("Authorization", encodeToken); // Name-Value
-            cookie.setHttpOnly(true); // 자바스크립트에서 쿠키에 접근할 수 없도록 설정
-            cookie.setMaxAge(60 * 60); // 쿠키의 유효 기간 설정(1시간)
-            cookie.setPath("/");
-
-            // Response 객체에 Cookie 추가
-            httpServletResponse.addCookie(cookie);
-        } catch (UnsupportedEncodingException e) {
-            log.error("JWT 쿠키 생성 중 에러 발생", e.getMessage());
-        }
-    }
-
     // HttpServletRequest 에서 Cookie Value : JWT 가져오기
     public String getTokenFromRequest(HttpServletRequest req) {
         Cookie[] cookies = req.getCookies();
