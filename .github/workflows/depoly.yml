@@ -44,7 +44,7 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: latest
         run: |
-          docker tag docker.io/library/onboarding:0.0.1-SNAPSHOT $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag docker.io/library/example:0.0.1-SNAPSHOT $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Amazon ECR 로그아웃
@@ -67,6 +67,8 @@ jobs:
           RDS_DBNAME: ${{ secrets.RDS_DBNAME }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -74,13 +76,13 @@ jobs:
           script_stop: true
           envs: ECR_REPOSITORY, IMAGE_TAG, AWS_ACCOUNT_ID, AWS_REGION, RDS_USER, RDS_PASSWORD, RDS_ENDPOINT, RDS_DBNAME, JWT_SECRET_KEY, REDIS_HOST
           script: |
-            docker stop onboarding || true
-            docker rm onboarding || true
+            docker stop example || true
+            docker rm example || true
             
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
             
-            docker run -m 1g -d --name onboarding -p 8080:8080 \
+            docker run -m 1g -d --name example -p 8080:8080 \
               -e RDS_USER=$RDS_USER \
               -e RDS_PASSWORD=$RDS_PASSWORD \
               -e RDS_ENDPOINT=$RDS_ENDPOINT \
